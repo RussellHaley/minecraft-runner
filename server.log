@@ -114,3 +114,75 @@ Tue Sep 11 22:42:00 2018 INFO Download Complete.
 Tue Sep 11 22:42:08 2018 INFO [11/Sep/2018:22:42:08 -0700] "GET / HTTP/1.1"  "-" "Mozilla/5.0 (X11; FreeBSD amd64; rv:60.0) Gecko/20100101 Firefox/60.0" 
 Tue Sep 11 22:42:09 2018 INFO message could not be parsed
 Tue Sep 11 22:42:09 2018 INFO 1
+Thu Sep 13 21:40:45 2018 INFO Found new file: minecraft_server.1.13.1.jar - https://launcher.mojang.com/v1/objects/fe123682e9cb30031eae351764f653500b7396c9/server.jar
+Thu Sep 13 21:40:53 2018 INFO Download Complete.
+Thu Sep 13 21:41:29 2018 INFO [13/Sep/2018:21:41:29 -0700] "GET / HTTP/1.1"  "-" "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" 
+Thu Sep 13 21:41:29 2018 INFO 
+Thu Sep 13 21:41:29 2018 INFO [13/Sep/2018:21:41:29 -0700] "GET /favicon.ico HTTP/1.1"  "-" "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" 
+Thu Sep 13 21:41:29 2018 INFO 
+Thu Sep 13 21:41:29 2018 INFO [13/Sep/2018:21:41:29 -0700] "GET /favicon.ico HTTP/1.1"  "-" "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" 
+Thu Sep 13 21:41:29 2018 INFO 
+Thu Sep 13 21:42:09 2018 INFO [13/Sep/2018:21:42:09 -0700] "GET / HTTP/1.1"  "-" "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" 
+Thu Sep 13 21:42:16 2018 INFO message could not be parsed
+Thu Sep 13 21:42:16 2018 INFO 1
+Thu Sep 13 21:52:48 2018 INFO [13/Sep/2018:21:52:48 -0700] "GET / HTTP/1.1"  "-" "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" 
+Thu Sep 13 21:52:52 2018 INFO message could not be parsed
+Thu Sep 13 21:52:52 2018 INFO 1
+Thu Sep 13 21:52:57 2018 INFO [13/Sep/2018:21:52:57 -0700] "GET / HTTP/1.1"  "-" "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" 
+Thu Sep 13 21:52:59 2018 INFO [13/Sep/2018:21:52:59 -0700] "GET / HTTP/1.1"  "-" "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" 
+Thu Sep 13 21:53:00 2018 INFO [13/Sep/2018:21:53:00 -0700] "GET / HTTP/1.1"  "-" "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" 
+Thu Sep 13 21:53:00 2018 INFO [13/Sep/2018:21:53:00 -0700] "GET / HTTP/1.1"  "-" "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" 
+Thu Sep 13 21:53:01 2018 INFO [13/Sep/2018:21:53:01 -0700] "GET / HTTP/1.1"  "-" "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" 
+Thu Sep 13 21:53:01 2018 INFO [13/Sep/2018:21:53:01 -0700] "GET / HTTP/1.1"  "-" "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" 
+Thu Sep 13 21:53:02 2018 INFO [13/Sep/2018:21:53:02 -0700] "GET / HTTP/1.1"  "-" "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" 
+Thu Sep 13 21:53:02 2018 INFO [13/Sep/2018:21:53:02 -0700] "GET / HTTP/1.1"  "-" "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" 
+Thu Sep 13 21:53:02 2018 INFO [13/Sep/2018:21:53:02 -0700] "GET / HTTP/1.1"  "-" "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" 
+Thu Sep 13 21:53:03 2018 INFO [13/Sep/2018:21:53:03 -0700] "GET / HTTP/1.1"  "-" "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" 
+Thu Sep 13 21:53:03 2018 INFO [13/Sep/2018:21:53:03 -0700] "GET / HTTP/1.1"  "-" "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" 
+Fri Sep 14 21:31:27 2018 INFO [14/Sep/2018:21:31:27 -0700] "GET / HTTP/1.1"  "-" "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" 
+Fri Sep 14 21:31:27 2018 INFO 
+Fri Sep 14 21:31:27 2018 INFO [14/Sep/2018:21:31:27 -0700] "GET /favicon.ico HTTP/1.1"  "-" "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" 
+Fri Sep 14 21:31:27 2018 INFO 
+Fri Sep 14 21:31:27 2018 INFO [14/Sep/2018:21:31:27 -0700] "GET /favicon.ico HTTP/1.1"  "-" "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" 
+Fri Sep 14 21:31:27 2018 INFO 
+Fri Sep 14 21:33:14 2018 INFO [14/Sep/2018:21:33:14 -0700] "GET / HTTP/1.1"  "-" "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" 
+Fri Sep 14 21:36:32 2018 INFO [14/Sep/2018:21:36:32 -0700] "GET / HTTP/1.1"  "-" "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" 
+Fri Sep 14 21:36:32 2018 INFO message could not be parsed
+Fri Sep 14 21:36:32 2018 INFO 1
+Fri Sep 14 21:36:32 2018 ERROR nil
+Fri Sep 14 21:36:32 2018 INFO removed 80cc8b2b-a07c-4e5e-ceb1-76c15e5f3203
+Fri Sep 14 21:47:29 2018 INFO [14/Sep/2018:21:47:29 -0700] "GET / HTTP/1.1"  "-" "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" 
+Fri Sep 14 21:47:36 2018 INFO message could not be parsed
+Fri Sep 14 21:47:36 2018 INFO 1
+Fri Sep 14 21:47:38 2018 INFO message could not be parsed
+Fri Sep 14 21:47:38 2018 INFO 1
+Fri Sep 14 21:47:52 2018 INFO message could not be parsed
+Fri Sep 14 21:47:52 2018 INFO 1
+Fri Sep 14 21:47:53 2018 INFO message could not be parsed
+Fri Sep 14 21:47:53 2018 INFO 1
+Fri Sep 14 21:48:34 2018 INFO message could not be parsed
+Fri Sep 14 21:48:34 2018 INFO 2
+Fri Sep 14 21:48:34 2018 INFO message could not be parsed
+Fri Sep 14 21:48:34 2018 INFO 2
+Fri Sep 14 21:48:35 2018 INFO message could not be parsed
+Fri Sep 14 21:48:35 2018 INFO 2
+Fri Sep 14 21:48:35 2018 INFO message could not be parsed
+Fri Sep 14 21:48:35 2018 INFO 2
+Fri Sep 14 21:48:35 2018 INFO message could not be parsed
+Fri Sep 14 21:48:35 2018 INFO 2
+Fri Sep 14 21:48:35 2018 INFO message could not be parsed
+Fri Sep 14 21:48:35 2018 INFO 2
+Fri Sep 14 21:48:35 2018 INFO message could not be parsed
+Fri Sep 14 21:48:35 2018 INFO 2
+Fri Sep 14 21:48:36 2018 INFO message could not be parsed
+Fri Sep 14 21:48:36 2018 INFO 2
+Fri Sep 14 21:50:00 2018 INFO [14/Sep/2018:21:50:00 -0700] "GET / HTTP/1.1"  "-" "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" 
+Fri Sep 14 21:50:02 2018 INFO message could not be parsed
+Fri Sep 14 21:50:02 2018 INFO 2
+Fri Sep 14 21:50:25 2018 INFO message could not be parsed
+Fri Sep 14 21:50:25 2018 INFO 2
+Fri Sep 14 21:51:22 2018 INFO message could not be parsed
+Fri Sep 14 21:51:22 2018 INFO 2
+Fri Sep 14 21:53:40 2018 ERROR nil
+Fri Sep 14 21:53:40 2018 INFO removed 3ebc1bfe-772c-4ce3-ccea-2e605907b9d0
+Fri Sep 14 21:53:44 2018 INFO [14/Sep/2018:21:53:44 -0700] "GET / HTTP/1.1"  "-" "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0 Iceweasel/38.8.0" 

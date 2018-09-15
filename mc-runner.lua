@@ -1,7 +1,4 @@
 local cqueues = require "cqueues"
---- lua-http websockets
-local websocket = require "http.websocket"
-local request = require "http.request"
 local request = require "http.request"
 local http_server = require "http.server"
 local websocket = require "http.websocket"
@@ -10,7 +7,11 @@ local rolling_logger = require "logging.rolling_file"
 local dkjson = require "dkjson"
 local persist = require "persist"
 local env, err, errno = persist.open_or_new("version_db")
+local lpty = require "lpty"
+
+local uuid = require "uuid"
 local mcs_versions = env:open_or_new_db("minecraft_server")
+uuid.randomseed(12365843213246849613)
 
 
 local req_timeout = 10
@@ -61,10 +62,8 @@ local function check_mcs_version(uri)
 end
 
 local function download_file(uri, dest, name)
-print('one')
 	req = request.new_from_uri(uri)
 	headers, stream = req:go(req_timeout)
-	print('teo')
 	if headers then
 		for k,v in headers:each() do
 			print(k,v)
@@ -85,9 +84,12 @@ print('one')
 end
 
 
+
 local function check_for_file()
 local counter = 0
 	repeat
+    
+    
 		local uri, jar = check_mcs_version(conf.start_page)
 		if not mcs_versions:item_exists(jar) then
 			mcs_versions:add_item(jar, {jar = jar, uri = uri, timestamp = os.date("%Y-%m-%d_%H%M%S")}) 
@@ -97,23 +99,23 @@ local counter = 0
 					local ok, emsg = download_file(uri, conf.download_dir, jar)
 					if ok  then
 						logger:info("Download Complete.")
-						print('Yes!')
 					else
 						logger:error(emsg)
 					end	
 				end
 				f()
 		else
-			print('version exists')
+-- 			print('version exists')
 			--~ do nothing right now
 		end
 		cqueues.sleep(2)
-		counter = counter + 1
-	until counter == 10
+--NOTE: Count will never equal 1!
+-- 		counter = counter + 1
+	until counter == 1
 end
 
 local function ProcessWebsocketMessage(t, msg)
-
+   t.websocket:send("Hello from Tokyo")
     if msg.type then
 
         local type = msg.type:upper()
@@ -148,18 +150,21 @@ end
 -- such as "4f1c1fbe-87a7-11e6-b146-0c54a518c15b"
 -- usage: 4f1c1fbe-87a7-11e6-b146-0c54a518c15b
 local function GetUUID()
-    local handle = io.popen("uuidgen")
-    local val, lines
-    if handle then
-        val = handle:read("*a")
-        --Don't remembe what this does, I think
-        -- it strips whitespace?
-        val = val:gsub("^%s*(.-)%s*$", "%1")
-        handle:close()
-    else
-        logger:error(0, "Failed to generate UUID");
-    end
-    return val
+    local u = uuid()
+    print("here's a new uuid: ",u)
+    return u
+--     local handle = io.popen("uuidgen")
+--     local val, lines
+--     if handle then
+--         val = handle:read("*a")
+--         --Don't remembe what this does, I think
+--         -- it strips whitespace?
+--         val = val:gsub("^%s*(.-)%s*$", "%1")
+--         handle:close()
+--     else
+--         logger:error(0, "Failed to generate UUID");
+--     end
+--     return val
 end
 --- ProcessRequest is where we process the request from the client.
 -- The system upgrades to a websocket if the ws or wss protocols are used.
@@ -209,6 +214,7 @@ local function ProcessRequest(server, stream)
                 else
                     logger:info("message could not be parsed")
                     logger:info(pos, err)
+                    ws:send("I only speak json, sorry." .. t.session_id)
                 end
             else
                 --Add valid reason codes for the data to be nil?
@@ -242,32 +248,51 @@ local function ProcessRequest(server, stream)
     end
 end
 
-local function Run()
-
-	local app_server = http_server.listen {
-		host = '127.0.0.1';
-		port = 8080;
+local function Listen()
+  local app_server = http_server.listen {
+		host = conf.host;
+		port = conf.port;
 		onstream = ProcessRequest;
 	}
-	--~ debug_file = io.open(i.debug_file_path, 'a')
+  -- Manually call :listen() so that we are bound before calling :localname()
+  assert(app_server:listen())
+  do
+    print(app_server:localname())
+    --~ print(string.format("Now listening on port %d\n", app_server.port))
+    print(string.format("Now listening on port %d\n", conf.port))
+  end
+  local cq_ok, err, errno = app_server:loop()
+  if not cq_ok then
+    print(err, errno, "Http server process ended.", debug.traceback())
+  end
 
-	--~ LogInfo("Starting client service on " .. os.date("%b %d, %Y %X"))
+end
 
+local function read_process(pty)
+  local aline = true
+  repeat
+    print('hey you')
+    local ok = pty:readok(0.1)
+    if ok then
+        data = pty:read(0.1)
+        print( '*', data, data:len() )
+    end
+    cqueues.sleep(1)
+  until not aLine
+  
+end
+
+local function Run()
+  local command = 'java -Xmx1024M -Xms1024M -jar minecraft/minecraft_server.1.13.1.jar nogui'
+  local pty = lpty.new()
+  local ok = pty:startproc(command)
+  if not ok then print('bail') os.exit(-1) end
+  
 	cq = cqueues.new()
 	cq:wrap(check_for_file)
-	cq:wrap(function()
-    -- Manually call :listen() so that we are bound before calling :localname()
-		assert(app_server:listen())
-		do
-			print(app_server:localname())
-			--~ print(string.format("Now listening on port %d\n", app_server.port))
-			print(string.format("Now listening on port %d\n", 8080))
-		end
-		local cq_ok, err, errno = app_server:loop()
-		if not cq_ok then
-			print(err, errno, "Http server process ended.", debug.traceback())
-		end
-	end)
+	cq:wrap(Listen)
+  cq:wrap(function() read_process(pty) end)
+--  cq:wrap(open_mc)
 
 
 	local cq_ok, err, errno = cq:loop()

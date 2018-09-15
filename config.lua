@@ -1,6 +1,6 @@
 local c = {
-host='192.168.1.99',
-port=8000,
+host='localhost',
+port=8086,
 base_path = '.',
 data_dir_name = 'data',
 debug_file_name = 'server.log',
