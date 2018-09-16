@@ -7,9 +7,11 @@ local rolling_logger = require "logging.rolling_file"
 local dkjson = require "dkjson"
 local persist = require "persist"
 local env, err, errno = persist.open_or_new("version_db")
-local lpty = require "lpty"
-
 local uuid = require "uuid"
+local lpty = require "lpty"
+local lfs = require 'lfs'
+local serpent = require "serpent"
+local pty
 local mcs_versions = env:open_or_new_db("minecraft_server")
 uuid.randomseed(12365843213246849613)
 
@@ -114,13 +116,20 @@ local counter = 0
 	until counter == 1
 end
 
+local function write_to_process(str)  
+  pty:send(str)
+  print("sent: " .. str)
+end
+
 local function ProcessWebsocketMessage(t, msg)
-   t.websocket:send("Hello from Tokyo")
-    if msg.type then
+  
+  local str = serpent.block(msg)
+    t.websocket:send(str)
+    if msg.cmd then
+      t.websocket:send('got here')
+        local cmd = msg.cmd:upper()
 
-        local type = msg.type:upper()
-
-        if type == "STATUS" then
+        if cmd == "STATUS" then
             t.last_status = os.date()
             local bt = tonumber(msg.body.board_temperature)
             if bt and bt > 158 then
@@ -133,14 +142,14 @@ local function ProcessWebsocketMessage(t, msg)
             end
 
             --Log status for each client
-        elseif type == "AUTH" then
+        elseif cmd == "AUTH" then
 
-        elseif type == "DATADUMP" then
-
-        elseif type == "UNIT-RESPONSE" then
+        elseif cmd == "HELP" then
+	  write_to_process(msg.cmd..'\n')
+        elseif cmd == "UNIT-RESPONSE" then
         else
-            logger:info("Type=" .. msg.type)
-            logger:info(pt(msg))
+            logger:info("Type=" .. msg.cmd)            
+	    write_to_process(msg.cmd..'\n')
         end
     end
 end
@@ -271,35 +280,53 @@ end
 local function read_process(pty)
   local aline = true
   repeat
-    print('hey you')
     local ok = pty:readok(0.1)
     if ok then
         data = pty:read(0.1)
+	for i,v in pairs(Sessions) do
+	  v.websocket:send(data)
+	end
         print( '*', data, data:len() )
+    else
+      --Do nothing right now.
     end
     cqueues.sleep(1)
-  until not aLine
-  
+  until not aline
+  print('exited')
 end
 
+
+
 local function Run()
-  local command = 'java -Xmx1024M -Xms1024M -jar minecraft/minecraft_server.1.13.1.jar nogui'
-  local pty = lpty.new()
-  local ok = pty:startproc(command)
-  if not ok then print('bail') os.exit(-1) end
+ lfs.chdir('minecraft')
+  local command = 'java' 
+  local args = {'-Xmx1024M', '-Xms1024M', '-jar', '/home/russellh/Git/minecraft-runner/minecraft/minecraft_server.1.13.1.jar',  'nogui'}
+
+  pty = lpty.new({raw_mode=true})
+  local ok = pty:startproc(command, table.unpack(args))
+  if not ok then 
+    print('bail') os.exit(-1) 
+  else 
+    if not pty:hasproc() then
+      print('no proc')
+    else
+      print('it should be running?')
+    end
+  end
   
-	cq = cqueues.new()
-	cq:wrap(check_for_file)
-	cq:wrap(Listen)
+  cq = cqueues.new()
   cq:wrap(function() read_process(pty) end)
---  cq:wrap(open_mc)
+  cq:wrap(check_for_file)
+  cq:wrap(Listen)
+  
+  --cq:wrap(open_mc)
 
 
-	local cq_ok, err, errno = cq:loop()
-	if not cq_ok then
-		print(err, errno, "Jumped the loop.", debug.traceback())
-	end
-    
+  local cq_ok, err, errno = cq:loop()
+  if not cq_ok then
+	  print(err, errno, "Jumped the loop.", debug.traceback())
+  end
+  
 end
 
 Run()
