@@ -65,5 +65,6 @@ function onSendClick() {
 	return;
     }
     var msg = document.getElementById("message").value;
-    webSocket.send(msg);
+    var out = {"cmd":msg };
+    webSocket.send(JSON.stringify(out));
 }

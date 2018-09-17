@@ -6,16 +6,15 @@ local http_headers = require "http.headers"
 local rolling_logger = require "logging.rolling_file"
 local dkjson = require "dkjson"
 local persist = require "persist"
-local env, err, errno = persist.open_or_new("version_db")
 local uuid = require "uuid"
 local lpty = require "lpty"
 local lfs = require 'lfs'
 local serpent = require "serpent"
+
 local pty
+local env, err, errno = persist.open_or_new("version_db")
 local mcs_versions = env:open_or_new_db("minecraft_server")
 uuid.randomseed(12365843213246849613)
-
-
 local req_timeout = 10
 local ShutDown = false
 local Sessions = {}
@@ -28,9 +27,7 @@ if not logger then
     os.exit(0)
 end
 
-local conlog_name = conf.base_path .. "/" .. conf.debug_file_name
-print(conlog_name)
-local connection_log = rolling_logger(conf.base_path .. "/" .. conf.debug_file_name, conf.file_roll_size or 1024*1024*10, conf.max_log_files or 31)
+local connection_log = rolling_logger(conf.base_path .. "/" .. conf.connection_log, conf.file_roll_size or 1024*1024*10, conf.max_log_files or 31)
 
 local function check_mcs_version(uri)
 
@@ -61,6 +58,7 @@ local function check_mcs_version(uri)
 		return nil, 'No jar file'
 	end
 	return dl_uri, jar
+	
 end
 
 local function download_file(uri, dest, name)
@@ -89,31 +87,31 @@ end
 
 local function check_for_file()
 local counter = 0
-	repeat
+repeat
     
     
-		local uri, jar = check_mcs_version(conf.start_page)
-		if not mcs_versions:item_exists(jar) then
-			mcs_versions:add_item(jar, {jar = jar, uri = uri, timestamp = os.date("%Y-%m-%d_%H%M%S")}) 
-			logger:info(string.format('Found new file: %s - %s', jar, uri))
-			local f = function() 
-					print(uri, conf.download_dir, jar)
-					local ok, emsg = download_file(uri, conf.download_dir, jar)
-					if ok  then
-						logger:info("Download Complete.")
-					else
-						logger:error(emsg)
-					end	
-				end
-				f()
-		else
--- 			print('version exists')
-			--~ do nothing right now
-		end
-		cqueues.sleep(2)
---NOTE: Count will never equal 1!
--- 		counter = counter + 1
-	until counter == 1
+  local uri, jar = check_mcs_version(conf.start_page)
+  if not mcs_versions:item_exists(jar) then
+	  mcs_versions:add_item(jar, {jar = jar, uri = uri, timestamp = os.date("%Y-%m-%d_%H%M%S")}) 
+	  logger:info(string.format('Found new file: %s - %s', jar, uri))
+	  local f = function() 
+			  print(uri, conf.download_dir, jar)
+			  local ok, emsg = download_file(uri, conf.download_dir, jar)
+			  if ok  then
+				  logger:info("Download Complete.")
+			  else
+				  logger:error(emsg)
+			  end	
+		  end
+		  f()
+  else
+  -- 			print('version exists')
+	  --~ do nothing right now
+  end
+  cqueues.sleep(2)
+  --NOTE: Count will never equal 1!
+  -- 		counter = counter + 1
+until counter == 1
 end
 
 local function write_to_process(str)  
@@ -123,10 +121,8 @@ end
 
 local function ProcessWebsocketMessage(t, msg)
   
-  local str = serpent.block(msg)
-    t.websocket:send(str)
     if msg.cmd then
-      t.websocket:send('got here')
+
         local cmd = msg.cmd:upper()
 
         if cmd == "STATUS" then
@@ -157,23 +153,10 @@ end
 --- Get a UUID from the OS
 -- return: Returns a system generated UUID
 -- such as "4f1c1fbe-87a7-11e6-b146-0c54a518c15b"
--- usage: 4f1c1fbe-87a7-11e6-b146-0c54a518c15b
 local function GetUUID()
     local u = uuid()
     print("here's a new uuid: ",u)
     return u
---     local handle = io.popen("uuidgen")
---     local val, lines
---     if handle then
---         val = handle:read("*a")
---         --Don't remembe what this does, I think
---         -- it strips whitespace?
---         val = val:gsub("^%s*(.-)%s*$", "%1")
---         handle:close()
---     else
---         logger:error(0, "Failed to generate UUID");
---     end
---     return val
 end
 --- ProcessRequest is where we process the request from the client.
 -- The system upgrades to a websocket if the ws or wss protocols are used.
@@ -223,7 +206,7 @@ local function ProcessRequest(server, stream)
                 else
                     logger:info("message could not be parsed")
                     logger:info(pos, err)
-                    ws:send("I only speak json, sorry." .. t.session_id)
+                    ws:send(string.format("I only speak json, sorry. %s - %s", data, t.session_id))
                 end
             else
                 --Add valid reason codes for the data to be nil?

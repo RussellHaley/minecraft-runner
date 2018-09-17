@@ -1,0 +1,16 @@
+logs
+version_db
+minecraft/banned-ips.json
+minecraft/banned-players.json
+minecraft/crash-reports/
+minecraft/eula.txt
+minecraft/ops.json
+minecraft/output
+minecraft/server.log
+minecraft/server.properties
+minecraft/usercache.json
+minecraft/version_db/
+minecraft/whitelist.json
+minecraft/world/
+server.properties
+.config.lua.kate-swp
