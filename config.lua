@@ -10,7 +10,8 @@ max_log_files=31,
 polling_default_seconds = 5,
 start_page = "https://minecraft.net/en-us/download/server",
 pattern = "(https://launcher.mojang.com/v1/objects/.*/server.jar).*(minecraft_server%..*%.jar)",
-download_dir = 'minecraft',
+download_dir = '~/Downloads',
+minecraft_dir = 'minecraft',
 req_timeout = 30
 }
 
