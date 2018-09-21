@@ -18,19 +18,16 @@ dependencies = {
    "dkjson",
    "uuid",
    "lpty",
-   "lfs"   
+   "luafilesystem"   
 }
 
 build = {
    type = "builtin",
    modules = {
-      ["persist/ptable"] = "persist/ptable.lua",
-      ["persist/errors"] = "persist/errors.lua",
-      ["persist/defaults"] = "persist/defaults.lua",
-      ["persist/serpent_helpers"] = "persist/serpent_helpers.lua",
-      ["persist/"] = "persist/init.lua"
-   },
-   copy_directories = {
-      "doc"
-   }
+      ["mc-runner/mc-runner"] = "mc-runner.lua",
+      ["mc-runner/config"] = "config.lua"
+   } 
+   --~ copy_directories = {
+      --~ "doc"
+   --~ }
 }

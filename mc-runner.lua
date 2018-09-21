@@ -11,15 +11,15 @@ local uri_patts = require "lpeg_patterns.uri"
 local ce = require "cqueues.errno"
 local rolling_logger = require "logging.rolling_file"
 local dkjson = require "dkjson"
-local persist = require "persist"
+--~ local persist = require "persist"
 local uuid = require "uuid"
 local lpty = require "lpty"
 local lfs = require 'lfs'
 local serpent = require "serpent"
 
 local pty
-local env, err, errno = persist.open_or_new("version_db")
-local mcs_versions = env:open_or_new_db("minecraft_server")
+--~ local env, err, errno = persist.open_or_new("version_db")
+--~ local mcs_versions = env:open_or_new_db("minecraft_server")
 uuid.randomseed(12365843213246849613)
 local req_timeout = 10
 local ShutDown = false
@@ -87,28 +87,43 @@ local function download_file(uri, dest, name)
 
 end
 
+local function check_fs_for_mc(check_path, jar_name)
+	
+	local i, t, popen = 0, {}, io.popen
+	local command = 'ls -a '.. check_path ..'/' .. jar_name .. ' 2> /dev/null'
 
+	local pfile = popen(command)
+	for filename in pfile:lines() do
+		i = i + 1
+		t[i] = filename
+	end
+	pfile:close()
+	
+	if #t == 0 then
+		return nil
+	else
+		return t
+	end
+	
+end
 
-local function check_web_for_latest(start_page, dest)
+local function check_web_for_latest(start_page, mc_dir)
 	local counter = 0
 	repeat
 		local uri, jar = check_mcs_version(start_page)
-		if not mcs_versions:item_exists(jar) then
-			mcs_versions:add_item(jar, {jar = jar, uri = uri, timestamp = os.date("%Y-%m-%d_%H%M%S")}) 
+		if not check_fs_for_mc(mc_dir, jar) then
+	--~ if not mcs_versions:item_exists(jar) then
+		--~ mcs_versions:add_item(jar, {jar = jar, uri = uri, timestamp = os.date("%Y-%m-%d_%H%M%S")}) 
 			logger:info(string.format('Found new file: %s - %s', jar, uri))
-			local f = function() 
-				  print(uri, conf.download_dir, jar)
-				  local ok, emsg = download_file(uri, dest, jar)
-				  if ok  then
-					  logger:info("Download Complete.")
-				  else
-					  logger:error(emsg)
-				  end
-			end;
-			f()
-		else
-		--             print('version exists')
-		  --~ do nothing right now
+			
+			print(uri, mc_dir, jar)
+			local ok, emsg = download_file(uri, mc_dir, jar)
+			if ok  then
+				logger:info("Download Complete.")
+			else
+				logger:error(emsg)
+			end
+			
 		end
 	cqueues.sleep(2)
 	  --NOTE: Count will never equal 1!
@@ -306,8 +321,8 @@ local function static_reply(myserver, stream, req_headers) -- luacheck: ignore 2
 			end
 		else
 			res_headers:upsert(":status", "200")
-			response_headers:append("content-type", "text/plain")
-			response_headers:append("content-type", request_content_type  or "text/html")
+			res_headers:append("content-type", "text/plain")
+			res_headers:append("content-type", "text/html")
 			--~ local mime_type = mdb and mdb:file(real_path) or "application/octet-stream"
 			--~ res_headers:append("content-type", mime_type)
 			assert(stream:write_headers(res_headers, req_method == "HEAD"))
@@ -449,27 +464,9 @@ local function read_process(pty)
 end
 
 
-local function check_fs_for_mc(check_path, jar_name)
-	
-	local i, t, popen = 0, {}, io.popen
-	local command = 'ls -a '.. check_path ..'/' .. jar_name .. ' 2> /dev/null'
-	print(command)
-	local pfile = popen(command)
-	for filename in pfile:lines() do
-		i = i + 1
-		t[i] = filename
-	end
-	pfile:close()
-	print(#t)
-	if #t == 0 then
-		return nil
-	else
-		return t
-	end
-	
-end
 
-local function StartMineCraft(start_page, jar_path, jar_name, retries)
+
+local function StartMineCraft(jar_path, jar_name, start_page, retries)
 	if not jar_path or not jar_name then 
 		local str = "Cannot start minecraft without a path and jar name."
 		logger:error(str)
@@ -484,9 +481,9 @@ local function StartMineCraft(start_page, jar_path, jar_name, retries)
 			local command = 'java' 
 			local args = {'-Xmx1024M', '-Xms1024M', '-jar', jar_name,  'nogui'}
 			pty = lpty.new({raw_mode=true})	
-			lfs.chdir(cur_dir)
-			local ok = pty:startproc(command, table.unpack(args))
 			
+			local ok = pty:startproc(command, table.unpack(args))
+			lfs.chdir(cur_dir)
 			if not ok then
 				local str = "Failed to start pty"
 				logger:error(str)
@@ -499,20 +496,22 @@ local function StartMineCraft(start_page, jar_path, jar_name, retries)
 			logger:info('Minecraft started.')
 			return pty
 		else
-			logger:info('Minecraft Jar not found. Downloading...')
-			local uri, name = check_mcs_version(start_page)
-			if uri and name then
-				local ok, emsg = download_file(uri, jar_path, name)
-				if ok  then
-					logger:info("Download Complete.")
+			if start_page then
+				logger:info('Minecraft Jar not found. Downloading...')
+				local uri, name = check_mcs_version(start_page)
+				if uri and name then
+					local ok, emsg = download_file(uri, jar_path, name)
+					if ok  then
+						logger:info("Download Complete.")
+					else
+						logger:error(emsg)
+					end
 				else
-					logger:error(emsg)
+					logger:error(string.format('Failed to find a uri or filename at %s', start_page))
 				end
-			else
-				logger:error(string.format('Failed to find a uri or filename at %s', start_page))
 			end
 		end
-		retries = retries - 1
+		if retries then retries = retries - 1 else retries = 0 end
 	until retries == 0
 	
 	return nil
@@ -522,10 +521,16 @@ local function StopMineCraft(pty)
 	
 end
 
+
+local function Init()
+	return nil
+end
+
 local function Run()
-	--~ **********GET JAR VERSION*************
+	local _, jar = check_mcs_version(conf.start_page)
+
 	assert(jar, 'TODO: You have to read jar info from a file first.')
-	local pty = StartMineCraft(conf.start_page, conf.minecraft_dir, jar, 3)
+	pty = StartMineCraft(conf.minecraft_dir, jar, conf.start_page, 3)
 
 	if not pty then 
 		logger:fatal('Failed to start the minecraft server. Could not download a new copy. Dying now.')
