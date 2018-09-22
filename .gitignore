@@ -1,5 +1,7 @@
 logs
-version_db
+connections.log
+server.log
+minecraft/logs/
 minecraft/banned-ips.json
 minecraft/banned-players.json
 minecraft/crash-reports/

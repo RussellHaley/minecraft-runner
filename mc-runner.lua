@@ -75,13 +75,9 @@ local function download_file(uri, dest, name)
 	req = request.new_from_uri(uri)
 	headers, stream = req:go(req_timeout)
 	if headers then
-		for k,v in headers:each() do
-			logger:info(k,v)
-		end
 		local name = dest..'/'.. name
 		local file = io.open(name,'w')
 		local ok = stream:save_body_to_file(file)
-		
 		return ok
 	else
 		--FREAKOUT
@@ -116,7 +112,6 @@ local function shutdown(pty)
 	--~ Ask Nicely
 	while pty:hasproc() and count <= 10 do
 		pty:send("/stop\n")
-		logger:info('sent /stop?')
 		cqueues.sleep(1) 
 		count = count + 1
 	end
@@ -124,8 +119,8 @@ local function shutdown(pty)
 	--~ NOTE: THIS DOESN'T WORK???
 	--~ KILL
 	if pty:hasproc() then
-		pty:endproc(false) 
-		logger:warn('Had to kill Minecraft.')
+		pty:endproc(true)
+		logger:warn('Had to SIGKIL Minecraft.')
 	else
 		logger:info('Minecraft stopped.')
 	end
@@ -542,7 +537,8 @@ local function check_web_for_latest(pty, start_page, mc_dir)
 				end
 				if not StartMineCraft(pty, mc_dir, jar, nil, 3) then
 					logger:fatal('Failed to start the minecraft server. Could not download a new copy. Dying now.')
-					error('Dying')
+					pty = nil
+					os.exit(-1)
 				end
 			else
 				logger:error(emsg)
@@ -578,6 +574,7 @@ local function Run()
 	--~ NOTE: os.exit() LEAVES THE PTY OPEN. ASSERT JUST RESTARTS THE RUN() FUNCTION
 	if not StartMineCraft(pty, conf.minecraft_dir, jar, conf.start_page, 3) then
 		logger:fatal('Failed to start the minecraft server. Could not download a new copy. Dying now.')
+		pty = nil --testing this, don't know if it works
 		os.exit(-1)
 	end
 
