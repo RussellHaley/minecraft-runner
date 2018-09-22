@@ -12,7 +12,9 @@ start_page = "https://minecraft.net/en-us/download/server",
 pattern = "(https://launcher.mojang.com/v1/objects/.*/server.jar).*(minecraft_server%..*%.jar)",
 download_dir = '~/Downloads',
 minecraft_dir = 'minecraft',
-req_timeout = 30
+req_timeout = 30,
+memory_min = 1024,
+memory_max = 1024
 }
 
 return c

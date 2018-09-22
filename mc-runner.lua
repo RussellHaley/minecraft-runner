@@ -17,7 +17,7 @@ local lpty = require "lpty"
 local lfs = require 'lfs'
 local serpent = require "serpent"
 
-local pty
+--~ local pty
 --~ local env, err, errno = persist.open_or_new("version_db")
 --~ local mcs_versions = env:open_or_new_db("minecraft_server")
 uuid.randomseed(12365843213246849613)
@@ -27,6 +27,9 @@ local Sessions = {}
 local uri_reference = uri_patts.uri_reference * lpeg.P(-1)
 local conf = require('config')
 
+--~ Placeholder for the function that writes websocke messages to the minecraft server.
+--~  I can either use a scriptwide pty or a set the pty through a funciton in Run(). I chose the later.
+local write_to_process
 
 local logger = rolling_logger(conf.base_path .. "/" .. conf.debug_file_name, conf.file_roll_size or 1024*1024*10, conf.max_log_files or 31)
 if not logger then
@@ -107,38 +110,29 @@ local function check_fs_for_mc(check_path, jar_name)
 	
 end
 
-local function check_web_for_latest(start_page, mc_dir)
-	local counter = 0
-	repeat
-		local uri, jar = check_mcs_version(start_page)
-		if not check_fs_for_mc(mc_dir, jar) then
-	--~ if not mcs_versions:item_exists(jar) then
-		--~ mcs_versions:add_item(jar, {jar = jar, uri = uri, timestamp = os.date("%Y-%m-%d_%H%M%S")}) 
-			logger:info(string.format('Found new file: %s - %s', jar, uri))
-			
-			print(uri, mc_dir, jar)
-			local ok, emsg = download_file(uri, mc_dir, jar)
-			if ok  then
-				logger:info("Download Complete.")
-			else
-				logger:error(emsg)
-			end
-			
-		end
-	cqueues.sleep(2)
-	  --NOTE: Count will never equal 1!
-	  --         counter = counter + 1
-	until counter == 1
+local function shutdown(pty)
+
+	local count = 1
+	--~ Ask Nicely
+	while pty:hasproc() and count <= 10 do
+		pty:send("/stop\n")
+		logger:info('sent /stop?')
+		cqueues.sleep(1) 
+		count = count + 1
+	end
+
+	--~ NOTE: THIS DOESN'T WORK???
+	--~ KILL
+	if pty:hasproc() then
+		pty:endproc(false) 
+		logger:warn('Had to kill Minecraft.')
+	else
+		logger:info('Minecraft stopped.')
+	end
+	
+	return not pty:hasproc()
 end
 
-local function write_to_process(str)
---~ NEED TO TEST FOR PTY. 
---~ This isn't a great pattern. I need to test the pty
---~ as well as allow it to be shutdown  and restarted
---~ without breaking things
-	pty:send(str)
-	print("sent: " .. str)
-end
 
 --- Get a UUID from the OS
 -- return: Returns a system generated UUID
@@ -340,8 +334,8 @@ local function static_reply(myserver, stream, req_headers) -- luacheck: ignore 2
 	end
 end
 
-local function websocket_reply(t, msg)
 
+local function websocket_reply(t, msg)
 	if msg.cmd then
 		local cmd = msg.cmd:upper()
 
@@ -354,7 +348,7 @@ local function websocket_reply(t, msg)
 			write_to_process(msg.cmd..'\n')
 		elseif cmd == "UNIT-RESPONSE" then
 		else
-			logger:info("Type=" .. msg.cmd)            
+			logger:info("Type=" .. msg.cmd)
 			write_to_process(msg.cmd..'\n')
 		end
 	end
@@ -380,7 +374,7 @@ local function process_request(server, stream)
 		stream.connection.version,
 		request_headers:get("referer") or "-",
 		request_headers:get("user-agent") or "-"
-		))
+		));
 
 	local ws = websocket.new_from_stream(stream, request_headers)
 	if ws then
@@ -435,8 +429,8 @@ local function Listen(app_server)
 	-- Manually call :listen() so that we are bound before calling :localname()
 	assert(app_server:listen())
 	do
-		print(app_server:localname())
-		print(string.format("Now listening on port %d\n", conf.port))
+		
+		logger:info(string.format("Now listening on %s port %d\n", app_server:localname(), conf.port))
 	end
 	local cq_ok, err, errno = app_server:loop()
 	if not cq_ok then
@@ -446,7 +440,7 @@ local function Listen(app_server)
 end
 
 local function read_process(pty)
-	local aline = true
+	Shutdown = false
 	repeat
 		local ok = pty:readok(0.1)
 		if ok then
@@ -459,29 +453,36 @@ local function read_process(pty)
 		  --Do nothing right now.
 		end
 		cqueues.sleep(1)
-	until not aline
+	until Shutdown
 	print('exited')
 end
 
 
 
 
-local function StartMineCraft(jar_path, jar_name, start_page, retries)
+local function StartMineCraft(pty, jar_path, jar_name, start_page, retries)
+	if not retries or type(retries) ~= 'number' then retries = 1 end
+	
+	local err = string.format('Failed to start minecraft after %d attempts', retries)
 	if not jar_path or not jar_name then 
 		local str = "Cannot start minecraft without a path and jar name."
 		logger:error(str)
 		return nil, str
 	end
-	
+
 	repeat
 		local jar = check_fs_for_mc(jar_path, jar_name)
+		
 		if jar then 
 			local cur_dir = lfs.currentdir()
 			lfs.chdir(jar_path)
-			local command = 'java' 
-			local args = {'-Xmx1024M', '-Xms1024M', '-jar', jar_name,  'nogui'}
-			pty = lpty.new({raw_mode=true})	
+			local command = 'java'
+			--HACK: I don't want to pass around memory configurations. So I'm hacking in the
+			-- scriptwide conf. It's a cheat.
+			local xmx = string.format('-Xmx%dM',conf.memory_max)
+			local xms = string.format('-Xms%dM',conf.memory_min)
 			
+			local args = {xms, xmx, '-jar', jar_name,  'nogui'}
 			local ok = pty:startproc(command, table.unpack(args))
 			lfs.chdir(cur_dir)
 			if not ok then
@@ -494,7 +495,7 @@ local function StartMineCraft(jar_path, jar_name, start_page, retries)
 				end
 			end
 			logger:info('Minecraft started.')
-			return pty
+			return true
 		else
 			if start_page then
 				logger:info('Minecraft Jar not found. Downloading...')
@@ -511,41 +512,94 @@ local function StartMineCraft(jar_path, jar_name, start_page, retries)
 				end
 			end
 		end
-		if retries then retries = retries - 1 else retries = 0 end
+		retries = retries - 1
 	until retries == 0
 	
 	return nil
 end
 
-local function StopMineCraft(pty)
-	
-end
 
+
+local function check_web_for_latest(pty, start_page, mc_dir)
+	local counter = 0
+	repeat
+		local uri, jar = check_mcs_version(start_page)
+		if not check_fs_for_mc(mc_dir, jar) then
+	--~ if not mcs_versions:item_exists(jar) then
+		--~ mcs_versions:add_item(jar, {jar = jar, uri = uri, timestamp = os.date("%Y-%m-%d_%H%M%S")}) 
+			logger:info(string.format('Found new file: %s - %s', jar, uri))
+			
+			--~ print(uri, mc_dir, jar)
+			local ok, emsg = download_file(uri, mc_dir, jar)
+
+			if ok  then
+				logger:info("Download Complete.")
+				
+				if not shutdown(pty) then
+					local str = 'Failed to shutdown PTY in any sane way. Killing everything and restarting.'
+					logger:error(str)
+					error(str)
+				end
+				if not StartMineCraft(pty, mc_dir, jar, nil, 3) then
+					logger:fatal('Failed to start the minecraft server. Could not download a new copy. Dying now.')
+					error('Dying')
+				end
+			else
+				logger:error(emsg)
+			end
+			
+		end
+	cqueues.sleep(2)
+	  --NOTE: Count will never equal 1!
+	  --         counter = counter + 1
+	until counter == 1
+end
 
 local function Init()
 	return nil
 end
 
 local function Run()
+	--~ local _, jar = check_mcs_version("http://jiberish.com") --conf.start_page)
 	local _, jar = check_mcs_version(conf.start_page)
+	if not jar then
+		logger:fatal('You have to read jar info from the web first. See start_page in the config.lua file.')
+		os.exit(-1) 
+	end
 
-	assert(jar, 'TODO: You have to read jar info from a file first.')
-	pty = StartMineCraft(conf.minecraft_dir, jar, conf.start_page, 3)
-
-	if not pty then 
+	logger:info(string.format('Latest minecrafter server version is %s', jar))
+	
+	local pty = lpty.new({raw_mode=true})
+	if not pty then
+		logger:fatal('Failed to start a pty.')
+		os.exit(-1)
+	end
+	
+	--~ NOTE: os.exit() LEAVES THE PTY OPEN. ASSERT JUST RESTARTS THE RUN() FUNCTION
+	if not StartMineCraft(pty, conf.minecraft_dir, jar, conf.start_page, 3) then
 		logger:fatal('Failed to start the minecraft server. Could not download a new copy. Dying now.')
 		os.exit(-1)
 	end
+
 	cq = cqueues.new()
-	
+
 	cq:wrap(function() 
 			read_process(pty) 
 		end);
 		
 	cq:wrap(function()
-			check_web_for_latest(conf.start_page, conf.minecraft_dir)
+			check_web_for_latest(pty, conf.start_page, conf.minecraft_dir)
 		end);
-		
+
+	write_to_process = function(str)
+	--~ NEED TO TEST FOR PTY. 
+	--~ This isn't a great pattern. I need to test the pty
+	--~ as well as allow it to be shutdown  and restarted
+	--~ without breaking things
+		pty:send(str)
+		print("sent: " .. str)
+	end
+
 	local app_server = http_server.listen {
 	host = conf.host;
 	port = conf.port;
@@ -560,9 +614,14 @@ local function Run()
 
 	local cq_ok, err, errno = cq:loop()
 	if not cq_ok then
-	  print(err, errno, "Jumped the loop.", debug.traceback())
+	logger:fatal("%d - %s\n%s", errno or -1, err, debug.traceback())
+	print(err, errno, "Jumped the loop.", debug.traceback())
 	end
-  
 end
 
-Run()
+-- call Run with pcall and if it dies, restart it. We can then add a proper handler in cqueues for signals
+repeat
+	Run()
+	logger:error("Restarting services. Check yer logs.")
+until not true
+
