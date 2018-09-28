@@ -1,5 +1,5 @@
 local c = {
-host='localhost',
+host='192.168.1.6',
 port=8086,
 base_path = '.',
 static_dir = 'www',

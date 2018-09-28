@@ -34,7 +34,7 @@ local write_to_process
 local logger = rolling_logger(conf.base_path .. "/" .. conf.debug_file_name, conf.file_roll_size or 1024*1024*10, conf.max_log_files or 31)
 if not logger then
 	print("logger failed")
-	os.exit(0)
+	os.exit(-1)
 end
 
 local connection_log = rolling_logger(conf.base_path .. "/" .. conf.connection_log, conf.file_roll_size or 1024*1024*10, conf.max_log_files or 31)
@@ -45,14 +45,16 @@ local function check_mcs_version(uri)
 
 	local headers, stream = req:go(req_timeout)
 	if headers == nil then
-		io.stderr:write(tostring(stream), "\n")
-		os.exit(1)
+		logger:error("check_mcs_version failed. no headers")
+		return nil, "request failed"
+		--io.stderr:write(tostring(stream), "\n")
+		--os.exit(1)
 	end
 
 	local body, err = stream:get_body_as_string()
 	if not body and err then
-		io.stderr:write(tostring(err), "\n")
-		os.exit(1)
+		logger:error("check_mcs_version failed. no body.")
+		return nil, "request failed."
 	end
 
 
@@ -167,9 +169,7 @@ local human do -- Utility function to convert to a human readable number
 		[5] = "P";
 	}
 	local log = math.log
-	if _VERSION:match("%d+%.?%d*") < "5.1" then
-		log = require "compat53.module".math.log
-	end
+
 	function human(n)
 		if n == 0 then return "0" end
 		local order = math.floor(log(n, 2) / 10)
@@ -187,14 +187,14 @@ local function static_reply(myserver, stream, req_headers) -- luacheck: ignore 2
 	local req_method = req_headers:get ":method"
 
 	-- Log request to stdout
-	assert(io.stdout:write(string.format('[%s] "%s %s HTTP/%g"  "%s" "%s"\n',
+	--[[assert(io.stdout:write(string.format('[%s] "%s %s HTTP/%g"  "%s" "%s"\n',
 		os.date("%d/%b/%Y:%H:%M:%S %z"),
 		req_method or "",
 		req_headers:get(":path") or "",
 		stream.connection.version,
 		req_headers:get("referer") or "-",
 		req_headers:get("user-agent") or "-"
-	)))
+	)))--]]
 
 	-- Build response headers
 	local res_headers = new_headers()
@@ -310,7 +310,7 @@ local function static_reply(myserver, stream, req_headers) -- luacheck: ignore 2
 			end
 		else
 			res_headers:upsert(":status", "200")
-			res_headers:append("content-type", "text/plain")
+			--~res_headers:append("content-type", "text/plain")
 			res_headers:append("content-type", "text/html")
 			--~ local mime_type = mdb and mdb:file(real_path) or "application/octet-stream"
 			--~ res_headers:append("content-type", mime_type)
@@ -429,7 +429,9 @@ local function Listen(app_server)
 	end
 	local cq_ok, err, errno = app_server:loop()
 	if not cq_ok then
-		print(err, errno, "Http server process ended.", debug.traceback())
+		logger:error(err, errno, "Http server process ended.", debug.traceback())
+	else
+		logger:info('Web server exited')
 	end
 
 end
@@ -449,7 +451,7 @@ local function read_process(pty)
 		end
 		cqueues.sleep(1)
 	until Shutdown
-	print('exited')
+	logger:info('Read pty exited.')
 end
 
 
@@ -515,9 +517,10 @@ end
 
 
 
-local function check_web_for_latest(pty, start_page, mc_dir)
+local function check_web_for_latest(pty, start_page, mc_dir, interval)
 	local counter = 0
 	repeat
+		print('tick')
 		local uri, jar = check_mcs_version(start_page)
 		if not check_fs_for_mc(mc_dir, jar) then
 	--~ if not mcs_versions:item_exists(jar) then
@@ -545,7 +548,7 @@ local function check_web_for_latest(pty, start_page, mc_dir)
 			end
 			
 		end
-	cqueues.sleep(2)
+	cqueues.sleep(interval or 15)
 	  --NOTE: Count will never equal 1!
 	  --         counter = counter + 1
 	until counter == 1
